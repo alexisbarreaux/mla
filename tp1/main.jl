@@ -9,12 +9,12 @@ include("./exercice5.jl")
 include("./constants.jl")
 
 """
-include("./main.jl")
-solveAllInstances()
+include("./tp1/main.jl")
+solveAll()
 """
 
-function runInstanceAndUpdateDataframe(size::Int64, rowToReplace::Union{Int, Nothing}=nothing; boundMode::Int64)::Bool
-    
+function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, rowToReplace::Union{Int, Nothing}=nothing)::Bool
+    println("Solving sze " * string(size))
     # Ex 1
     result = moviesBenders(size)
     if result == nothing
@@ -52,38 +52,39 @@ function runInstanceAndUpdateDataframe(size::Int64, rowToReplace::Union{Int, Not
     end
 
     # Ex 5
-    result = moviesBendersDValueGurobi(size)
-    if result == nothing
-        println("NOT FEASIBLE for ex5!!")
-        return false
+    if size > 10000
+        result = moviesBendersDValueGurobi(size)
+        if result == nothing
+            println("NOT FEASIBLE for ex5!!")
+            return false
+        else
+            gurobiCutsWithDValue, gurobiCutsWithDTime = result
+        end
     else
-        gurobiCutsWithDValue, gurobiCutsWithDTime = result
+        gurobiCutsWithDTime = -1.
     end
-    (size=Int64[], optimal=Bool[], value_cuts =Float64[]
-    , cutsTime =Float64[], baseTime  =Float64[], cplexTime =Float64[],
-     cutsWithDTime =Float64[], gurobiCutsWithDTime =Float64[])
     # Modify dataframe
     if rowToReplace == nothing
-        rowToReplace = findfirst(==(fileToRun), currentResults.instance)
+        rowToReplace = findfirst(==(size), currentResults.size)
         if rowToReplace == nothing
             println("Pushing new row to results dataframe")
-            push!(currentResults, [fileToRun cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime])
+            push!(currentResults, [size cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime])
             return true
         else
             currentRow= currentResults[rowToReplace,:]
-            currentResults[rowToReplace,:] = [fileToRun cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime]
+            currentResults[rowToReplace,:] = [size cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime]
             return true
         end
     else
         currentRow = currentResults[rowToReplace,:]
-        println("Improved value for " * fileToRun)
-        currentResults[rowToReplace,:] = [fileToRun cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime]
+        println("Improved value for " * size)
+        currentResults[rowToReplace,:] = [size cutsOptimal cutsValue cutsTime baseTime cplexTime cutsWithDTime gurobiCutsWithDTime]
         return true
     end
     return false
 end
 
-function solveAllInstances(resultFile::String=RESULTS_FILE)::Nothing
+function solveAll(resultFile::String=RESULTS_FILE)::Nothing
     # Loading
     filePath =RESULTS_DIR_PATH * "\\" * resultFile * ".csv"
     # Get unoptimal instance
@@ -96,7 +97,7 @@ function solveAllInstances(resultFile::String=RESULTS_FILE)::Nothing
     end
 
     # Run
-    for size in vcat([10, 100], [1000*i for i=1:10])
+    for size in vcat([10, 100], [1000*i for i=1:5:50])
         updatedDf = runInstanceAndUpdateDataframe(currentResults, size)
         if updatedDf
             CSV.write(filePath, currentResults, delim=";")

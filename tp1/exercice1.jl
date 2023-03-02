@@ -98,14 +98,16 @@ function moviesBenders(n::Int64=-1, showResult::Bool= false, silent::Bool=true, 
             # Solve sub problems with current optimum
             w_val = JuMP.value.(w)
             y_val = JuMP.value.(y)
-            if showResult
+            if showResult && !silent
                 println("Current value ", value, " w ", w_val, " y ", y_val)
             end
             subVal, v, b, subTime= subProblem(y_val, w_val, n, c, d)
             runTime += subTime
-            println("Subproblem value ", subVal)
             if subVal > (w_val + 1e-5)
-                println("Adding optimality cut")
+                if !silent
+                    println("Subproblem value ", subVal)
+                    println("Adding optimality cut")
+                end
                 @constraint(model, w >= d * b - sum(y[i] * v[i] for i in 1:n))
                 hasAddedConstraint = true
             end
@@ -126,12 +128,10 @@ function moviesBenders(n::Int64=-1, showResult::Bool= false, silent::Bool=true, 
         y_val = JuMP.value.(y)
         println()
         println()
-        println("Results : ")
         if showResult
-            println("y : ", y_val)
-            println("w : ", w_val)
+            println("Results : ")
+            println("Value : ", value, " Time ", runTime, "s.")
         end
-        println("Value : ", value, " Time ", runTime, "s.")
 
         return isOptimal, value, runTime
     else
