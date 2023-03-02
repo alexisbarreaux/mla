@@ -2,8 +2,8 @@ using JuMP
 using CPLEX
 
 """
-include("./tp1/exercice1.jl")
-moviesBenders(1000)
+include("./tp1/exercice4.jl")
+moviesBendersDValue(1000)
 """
 function loadData(n::Int)
     d = div( n, 2 )
@@ -49,7 +49,7 @@ function subProblem(y_val::Vector{Float64}, w_val::Float64, n::Int64, c::Vector{
 end
 
 
-function moviesBenders(n::Int64=-1, showResult::Bool= false, silent::Bool=true, timeLimit::Float64=-1.0)::Any
+function moviesBendersDValue(n::Int64=-1, showResult::Bool= false, silent::Bool=true, timeLimit::Float64=-1.0)::Any
     if n < 0
         n=5 # Nb vars
         f =[7 , 2 , 2 , 7 , 7]
@@ -101,8 +101,17 @@ function moviesBenders(n::Int64=-1, showResult::Bool= false, silent::Bool=true, 
             if showResult
                 println("Current value ", value, " w ", w_val, " y ", y_val)
             end
-            subVal, v, b, subTime= subProblem(y_val, w_val, n, c, d)
-            runTime += subTime
+
+            # Don't solve subproblem if sum of y is d
+            sumY = sum(y_val)
+            if sumY == d
+                subVal = sum(y_val[i]*c[i] for i in 1:n)
+                b = maximum(c)
+                v = [b - c[i] for i in 1:n]
+            else
+                subVal, v, b, subTime= subProblem(y_val, w_val, n, c, d)
+                runTime += subTime
+            end
             println("Subproblem value ", subVal)
             if subVal > (w_val + 1e-5)
                 println("Adding optimality cut")
