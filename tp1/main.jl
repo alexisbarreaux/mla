@@ -14,7 +14,7 @@ solveAll()
 """
 
 function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, rowToReplace::Union{Int, Nothing}=nothing)::Bool
-    println("Solving sze " * string(size))
+    println("Solving size " * string(size))
     # Ex 1
     result = moviesBenders(size)
     if result == nothing
@@ -22,6 +22,7 @@ function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, r
         return false
     else
         cutsOptimal, cutsValue, cutsTime = result
+        println("Cuts time "* string(cutsTime))
     end
 
     # Ex 2
@@ -31,6 +32,7 @@ function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, r
         return false
     else
         baseValue, baseTime = result
+        println("Base time "* string(baseTime))
     end
 
     # Ex 3
@@ -40,6 +42,7 @@ function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, r
         return false
     else
         cplexValue, cplexTime = result
+        println("CPLEX time "* string(cplexTime))
     end
 
     # Ex 4
@@ -49,16 +52,19 @@ function runInstanceAndUpdateDataframe(currentResults::DataFrame, size::Int64, r
         return false
     else
         cutsWithDValue, cutsWithDTime = result
+        println("Cuts with d constraint time "* string(cutsWithDTime))
     end
 
     # Ex 5
-    if size > 10000
+    if size <= 1000
+        println("HERE " *string(size))
         result = moviesBendersDValueGurobi(size)
         if result == nothing
             println("NOT FEASIBLE for ex5!!")
             return false
         else
             gurobiCutsWithDValue, gurobiCutsWithDTime = result
+            println("Gurobi with d constraint time "* string(gurobiCutsWithDTime))
         end
     else
         gurobiCutsWithDTime = -1.
@@ -97,7 +103,7 @@ function solveAll(resultFile::String=RESULTS_FILE)::Nothing
     end
 
     # Run
-    for size in vcat([10, 100], [1000*i for i=1:5:50])
+    for size in vcat([10, 100], [1000*i for i=1:50:100])
         updatedDf = runInstanceAndUpdateDataframe(currentResults, size)
         if updatedDf
             CSV.write(filePath, currentResults, delim=";")
