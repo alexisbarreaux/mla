@@ -133,7 +133,7 @@ function moviesBenders(n::Int64=-1, showResult::Bool= false, silent::Bool=true, 
         end
         println("Value : ", value, " Time ", runTime, "s.")
 
-        return
+        return isOptimal, value, runTime
     else
         println("Not feasible!!")
         return

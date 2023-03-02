@@ -71,9 +71,10 @@ function moviesCPLEX(n::Int64=-1, showResult::Bool= false, silent::Bool=true, ti
             println("y : ", y_val)
             println("x : ", x_val)
         end
-        println("Value : ", value, " Time ", round(JuMP.solve_time(model), digits= 5), "s.")
+        time = round(JuMP.solve_time(model), digits= 5)
+        println("Value : ", value, " Time ", time, "s.")
 
-        return
+        return value, time
     else
         println("Not feasible!!")
         return

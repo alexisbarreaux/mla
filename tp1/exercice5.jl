@@ -143,7 +143,7 @@ function moviesBendersDValueGurobi(n::Int64=-1, showResult::Bool= false, silent:
         end
         println("Value : ", value, " Time ", runTime, "s.")
 
-        return
+        return value, runTime
     else
         println("Not feasible!!")
         return
