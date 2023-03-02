@@ -64,15 +64,13 @@ function moviesCPLEX(n::Int64=-1, showResult::Bool= false, silent::Bool=true, ti
         # Solve sub problems with current optimum
         x_val = JuMP.value.(x)
         y_val = JuMP.value.(y)
-        println()
-        println()
-        println("Results : ")
+
         if showResult
-            println("y : ", y_val)
-            println("x : ", x_val)
+            println()
+            println("Results : ")
+            println("Value : ", value, " Time ", time, "s.")
         end
         time = round(JuMP.solve_time(model), digits= 5)
-        println("Value : ", value, " Time ", time, "s.")
 
         return value, time
     else

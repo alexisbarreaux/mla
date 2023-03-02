@@ -112,9 +112,11 @@ function moviesBendersDValue(n::Int64=-1, showResult::Bool= false, silent::Bool=
                 subVal, v, b, subTime= subProblem(y_val, w_val, n, c, d)
                 runTime += subTime
             end
-            println("Subproblem value ", subVal)
             if subVal > (w_val + 1e-5)
-                println("Adding optimality cut")
+                if !silent
+                    println("Subproblem value ", subVal)
+                    println("Adding optimality cut")
+                end
                 @constraint(model, w >= d * b - sum(y[i] * v[i] for i in 1:n))
                 hasAddedConstraint = true
             end
