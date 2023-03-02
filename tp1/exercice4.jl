@@ -135,14 +135,11 @@ function moviesBendersDValue(n::Int64=-1, showResult::Bool= false, silent::Bool=
         # Solve sub problems with current optimum
         w_val = JuMP.value.(w)
         y_val = JuMP.value.(y)
-        println()
-        println()
-        println("Results : ")
         if showResult
-            println("y : ", y_val)
-            println("w : ", w_val)
+            println()
+            println("Results : ")
+            println("Value : ", value, " Time ", runTime, "s.")
         end
-        println("Value : ", value, " Time ", runTime, "s.")
 
         return value, runTime
     else
