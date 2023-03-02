@@ -19,7 +19,7 @@ function loadData(n::Int)
     return n, d, f, c
 end
 
-function moviesCPLEX(n::Int64=-1, showResult::Bool= false, silent::Bool=true, timeLimit::Float64=-1.0)::Any
+function moviesCPLEX(n::Int64=-1; showResult::Bool= false, silent::Bool=true, timeLimit::Float64=-1.0)::Any
     if n < 0
         n=5 # Nb vars
         f =[7 , 2 , 2 , 7 , 7]
@@ -58,7 +58,7 @@ function moviesCPLEX(n::Int64=-1, showResult::Bool= false, silent::Bool=true, ti
     optimize!(model)
     feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
     isOptimal = termination_status(model) == MOI.OPTIMAL
-    if feasibleSolutionFound && isOptimal
+    if feasibleSolutionFound
         # Il faut checker si on a encore des plans non valides
         value = JuMP.objective_value(model)
         # Solve sub problems with current optimum
@@ -71,7 +71,11 @@ function moviesCPLEX(n::Int64=-1, showResult::Bool= false, silent::Bool=true, ti
             println("Value : ", value, " Time ", time, "s.")
         end
         time = round(JuMP.solve_time(model), digits= 5)
-
+        """
+        println(JuMP.relative_gap(model))
+        println(JuMP.objective_bound(model))
+        println(value)
+        """
         return value, time
     else
         println("Not feasible!!")
