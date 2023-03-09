@@ -51,6 +51,8 @@ end
 
 function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showResult::Bool= false,
      timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+    
+    start = time()
     readGraph("./tp2/instances/"*inputFile*".txt")
     # Creating the model
     model = Model(CPLEX.Optimizer)
@@ -69,7 +71,6 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
 
     hasAddedConstraint = true
     yIsRelaxed = true
-    runTime = 0
     nbIterRelaxed = 0
     nbIter = 0
     while hasAddedConstraint || yIsRelaxed
@@ -85,7 +86,6 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
         optimize!(model)
         feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
         isOptimal = termination_status(model) == MOI.OPTIMAL
-        runTime += JuMP.solve_time(model)
 
         if feasibleSolutionFound
             value = JuMP.objective_value(model)
@@ -94,8 +94,7 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
             if showResult
                 println("Current value ", value)
             end
-            subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
-            runTime += subTime
+            subVal, v_ij_val, v_val, _= subProblem(y_val, bnd)
             if subVal > 1e-5
                 if yIsRelaxed
                     nbIterRelaxed += 1
@@ -130,7 +129,7 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
             println("Value : ", value, " Time ", runTime, "s.")
         end
 
-        return isOptimal, value, runTime, nbIterRelaxed, nbIter
+        return isOptimal, value, time() - start, nbIterRelaxed, nbIter
     else
         println("Not feasible!!")
         return
