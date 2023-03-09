@@ -70,6 +70,7 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
     hasAddedConstraint = true
     yIsRelaxed = true
     runTime = 0
+    nbIterRelaxed = 0
     nbIter = 0
     while hasAddedConstraint || yIsRelaxed
         if hasAddedConstraint == false
@@ -96,7 +97,11 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
             subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
             runTime += subTime
             if subVal > 1e-5
-                nbIter += 1
+                if yIsRelaxed
+                    nbIterRelaxed += 1
+                else
+                    nbIter += 1
+                end
                 if showResult
                     println("Subproblem value ", subVal)
                     println("Adding optimality cut")
@@ -125,7 +130,7 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
             println("Value : ", value, " Time ", runTime, "s.")
         end
 
-        return isOptimal, value, runTime, nbIter
+        return isOptimal, value, runTime, nbIterRelaxed, nbIter
     else
         println("Not feasible!!")
         return
