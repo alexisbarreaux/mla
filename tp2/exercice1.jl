@@ -1,37 +1,39 @@
 using JuMP
 using CPLEX
 
+include("./instances/exemple-lecture-graphe.jl")
 """
 include("./tp2/exercice1.jl")
-include("./tp2/instances/exemple-lecture-graphe.jl")
 readGraph("./tp2/instances/benders-graphe-hexagone.txt")
-linksBenders(1000)
+linksBenders("benders-graphe-hexagone.txt")
 """
 
-function subProblem(y_val::Vector{Float64}, bnd::Int64, d::Vector{Int64}, n::Int64, E::Matrix)::Any
+function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     # Creating the model
     sub_model = Model(CPLEX.Optimizer)
     set_silent(sub_model)
 
     ##### Variables #####
-    @variable(sub_model, v_ij[i in 1:n, j in 1:n if adj[i,j] > 0.0] >= 0.)
+    @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.)
     @variable(sub_model, v[i in 1:n] >= 0.)
 
     ##### Objective #####
-    @objective(sub_model, Max, - bnd*sum(y_val[i,j] * v_ij[(i,j)] for i in 1:n for j in 1:n if adj[i,j] > 0.0) + 
-                sum(d[i] * v[i] for i in 1:n))
+    @objective(sub_model, Max, - bnd*sum(y_val[i,j] * v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0) + 
+                sum(demande[i] * v[i] for i in 1:n))
     
     ##### Constraints #####
     @constraint(sub_model, v[1] == 0)
     # Feasibility constraint
-    @constraint(sub_model, sum(v_ij) + sum(v[i] for i in 1:n)== 1)
+    @constraint(sub_model, sum(v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0) == 1)
+    @constraint(sub_model, sum(v[i] for i in 1:n)== 1)
+
 
     # Edges constraint
     for i in 1:n
         for j in 1:n
             if adj[i,j] > 0.0
-                @constraint(sub_model, v[(i,j)] - v[i] + v[j] <= 0)
-                @constraint(sub_model, v[(i,j)] + v[i] - v[j] <= 0)
+                @constraint(sub_model, v_ij[i,j] - v[i] + v[j] <= 0)
+                @constraint(sub_model, v_ij[i,j] + v[i] - v[j] <= 0)
             end
         end
     end
@@ -56,10 +58,10 @@ function linksBenders(inputFile::String="benders-graphe-hexagone.txt", showResul
     end
 
     ##### Variables #####
-    @variable(model, y[i in 1:n, j in 1:n if adj[i,j] > 0.0] >= 0., Int)
+    @variable(model, y[i in 1:n, j in 1:n] >= 0., Int)
 
     ##### Objective #####
-    @objective(model, Min, sum(y))
+    @objective(model, Min, sum(y[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0))
     
     ##### Constraints #####
 
@@ -82,7 +84,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone.txt", showResul
             if showResult && !silent
                 println("Current value ", value, " y ", y_val)
             end
-            subVal, v_ij_val, v_val, subTime= subProblem(y_val, w_val, n, c, d)
+            subVal, v_ij_val, v_val, subTime= subProblem(y_val, 1)
             runTime += subTime
             if subVal > 1e-5
                 if !silent
@@ -90,7 +92,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone.txt", showResul
                     println("Adding optimality cut")
                 end
                 @constraint(model, - bnd*sum(y[i,j] * v_ij_val[(i,j)] for i in 1:n for j in 1:n if adj[i,j] > 0.0) + 
-                sum(d[i] * v_val[i] for i in 1:n) <= 0)
+                sum(demande[i] * v_val[i] for i in 1:n) <= 0)
                 hasAddedConstraint = true
             end
         else
@@ -106,7 +108,6 @@ function linksBenders(inputFile::String="benders-graphe-hexagone.txt", showResul
         # Il faut checker si on a encore des plans non valides
         value = JuMP.objective_value(model)
         # Solve sub problems with current optimum
-        w_val = JuMP.value.(w)
         y_val = JuMP.value.(y)
         if showResult
             println()
