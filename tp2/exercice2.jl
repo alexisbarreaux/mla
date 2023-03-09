@@ -3,9 +3,9 @@ using CPLEX
 
 include("./instances/exemple-lecture-graphe.jl")
 """
-include("./tp2/exercice1.jl")
+include("./tp2/exercice2.jl")
 readGraph("./tp2/instances/benders-graphe-hexagone.txt")
-linksBenders("benders-graphe-hexagone.txt")
+linksBendersRelaxed("benders-graphe-hexagone.txt")
 """
 
 function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
@@ -49,8 +49,9 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
 end
 
 
-function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool= false,
+function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showResult::Bool= false,
      timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+    
     start = time()
     readGraph("./tp2/instances/"*inputFile*".txt")
     # Creating the model
@@ -61,7 +62,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     end
 
     ##### Variables #####
-    @variable(model, y[i in 1:n, j in 1:n] >= 0., Int)
+    @variable(model, y[i in 1:n, j in 1:n] >= 0.)
 
     ##### Objective #####
     @objective(model, Min, sum(y[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j))
@@ -69,8 +70,15 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     ##### Constraints #####
 
     hasAddedConstraint = true
+    yIsRelaxed = true
+    nbIterRelaxed = 0
     nbIter = 0
-    while hasAddedConstraint
+    while hasAddedConstraint || yIsRelaxed
+        if hasAddedConstraint == false
+            # Y becomes integer and we go on
+            yIsRelaxed = false
+            set_integer.(y)
+        end
         hasAddedConstraint = false
         # Solve current state
 
@@ -86,9 +94,13 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
             if showResult
                 println("Current value ", value)
             end
-            subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
+            subVal, v_ij_val, v_val, _= subProblem(y_val, bnd)
             if subVal > 1e-5
-                nbIter += 1
+                if yIsRelaxed
+                    nbIterRelaxed += 1
+                else
+                    nbIter += 1
+                end
                 if showResult
                     println("Subproblem value ", subVal)
                     println("Adding optimality cut")
@@ -117,7 +129,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
             println("Value : ", value, " Time ", time() - start, "s.")
         end
 
-        return isOptimal, value, time() - start, nbIter
+        return isOptimal, value, time() - start, nbIterRelaxed, nbIter
     else
         println("Not feasible!!")
         return
