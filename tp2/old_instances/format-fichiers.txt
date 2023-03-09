@@ -1,0 +1,5 @@
+première ligne: nombre de sommets n
+2ème ligne:     nombre d'arêtes   m
+m prochaines lignes  : m arêtes sous la forme   "sommet1 sommet2"
+n prochaines lignes  : n demandes sous la forme "sommet  demande"
+La source est toujours 0.
