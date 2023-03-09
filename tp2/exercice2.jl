@@ -126,7 +126,7 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
         if showResult
             println()
             println("Results : ")
-            println("Value : ", value, " Time ", runTime, "s.")
+            println("Value : ", value, " Time ", time() - start, "s.")
         end
 
         return isOptimal, value, time() - start, nbIterRelaxed, nbIter

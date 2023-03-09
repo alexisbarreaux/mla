@@ -51,6 +51,7 @@ end
 
 function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool= false,
      timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+    start = time()
     readGraph("./tp2/instances/"*inputFile*".txt")
     # Creating the model
     model = Model(CPLEX.Optimizer)
@@ -68,7 +69,6 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     ##### Constraints #####
 
     hasAddedConstraint = true
-    runTime = 0
     nbIter = 0
     while hasAddedConstraint
         hasAddedConstraint = false
@@ -78,7 +78,6 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
         optimize!(model)
         feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
         isOptimal = termination_status(model) == MOI.OPTIMAL
-        runTime += JuMP.solve_time(model)
 
         if feasibleSolutionFound
             value = JuMP.objective_value(model)
@@ -88,7 +87,6 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
                 println("Current value ", value)
             end
             subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
-            runTime += subTime
             if subVal > 1e-5
                 nbIter += 1
                 if showResult
@@ -116,10 +114,10 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
         if showResult
             println()
             println("Results : ")
-            println("Value : ", value, " Time ", runTime, "s.")
+            println("Value : ", value, " Time ", time() - start, "s.")
         end
 
-        return isOptimal, value, runTime, nbIter
+        return isOptimal, value, time() - start, nbIter
     else
         println("Not feasible!!")
         return
