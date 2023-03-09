@@ -27,4 +27,4 @@ function readGraph(file)
         demande[u+1]=d
     end
 end
-readGraph("benders2.txt")
+#readGraph("benders2.txt")
