@@ -15,7 +15,13 @@ bnd = 3
                 TIME    VALEUR   Iter       TIME    VALEUR    Iter(relaxed/normal)   
 =============================================================================================
 hexagone       0.03900  10.0     9          0.01699    10.0    8   / 0
-benders1.txt   11.43799 237.0    199        8.66799    237.0   76  / 56
+benders1.txt   11.4379  237.0    199        8.66799    237.0   76  / 56
 benders2.txt   -------  -----    ---        -------  -----    ---
 benders3.txt   -------  -----    ---        -------  -----    ---     
 benders4.txt   -------  -----    ---        -------  -----    ---      
+
+Nota bene: 
+- si la solution est notée "---" c'est qu'il n'y a pas de solutions réalisable
+en 60s, ie qu'il y a encore une coupe violée au bout du temps.
+- les résultats ont été obtenus sur une machine avec un processeur 
+Intel(R) Core(TM) i5-7400 CPU @ 3.00GHz (4 CPUs), ~3.0GHz et 12 Gb de RAM.
