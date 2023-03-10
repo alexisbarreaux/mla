@@ -5,7 +5,7 @@ include("./instances/exemple-lecture-graphe.jl")
 """
 include("./tp2/exercice1.jl")
 readGraph("./tp2/instances/benders-graphe-hexagone.txt")
-linksBenders("benders-graphe-hexagone.txt")
+linksBenders("benders-graphe-hexagone")
 """
 
 function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
