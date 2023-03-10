@@ -5,7 +5,7 @@ include("./instances/exemple-lecture-graphe.jl")
 """
 include("./tp2/exercice2.jl")
 readGraph("./tp2/instances/benders-graphe-hexagone.txt")
-linksBendersRelaxed("benders-graphe-hexagone.txt")
+linksBendersRelaxed("benders-graphe-hexagone")
 """
 
 function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
@@ -73,24 +73,32 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
     yIsRelaxed = true
     nbIterRelaxed = 0
     nbIter = 0
-    while hasAddedConstraint || yIsRelaxed
+
+    feasibleSolutionFound = false
+    isOptimal = false
+    y_val = nothing
+    value = 0
+
+    while (hasAddedConstraint || yIsRelaxed) && (timeLimit < 0 || (time() - start) < timeLimit)
         if hasAddedConstraint == false
             # Y becomes integer and we go on
             yIsRelaxed = false
             set_integer.(y)
         end
         hasAddedConstraint = false
-        # Solve current state
 
         # Benders
+        if timeLimit >= 0
+            set_time_limit_sec(model, timeLimit - (time() - start))
+        end
         optimize!(model)
         feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
         isOptimal = termination_status(model) == MOI.OPTIMAL
+        y_val = JuMP.value.(y)
 
-        if feasibleSolutionFound
+        if feasibleSolutionFound && isOptimal
             value = JuMP.objective_value(model)
             # Solve sub problems with current optimum
-            y_val = JuMP.value.(y)
             if showResult
                 println("Current value ", value)
             end
@@ -118,11 +126,16 @@ function linksBendersRelaxed(inputFile::String="benders-graphe-hexagone"; showRe
     ### Display the solution
     feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
     isOptimal = termination_status(model) == MOI.OPTIMAL
-    if feasibleSolutionFound && isOptimal
-        # Il faut checker si on a encore des plans non valides
-        value = JuMP.objective_value(model)
-        # Solve sub problems with current optimum
-        y_val = JuMP.value.(y)
+    if feasibleSolutionFound
+        # If time was exceeded, ensure we have no invalid cuts for the last 
+        if (time() - start) > timeLimit
+            subVal, _,_,_= subProblem(y_val, bnd)
+            if subVal > 1e-5
+                println("There are still invalid cuts after time limit")
+                return
+            end
+        end
+
         if showResult
             println()
             println("Results : ")
