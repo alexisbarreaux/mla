@@ -14,31 +14,32 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     set_silent(sub_model)
 
     ##### Variables #####
-    @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.)
-    @variable(sub_model, v[i in 1:n] >= 0.)
+    @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.0)
+    @variable(sub_model, v[i in 1:n] >= 0.0)
 
     ##### Objective #####
-    @objective(sub_model, Max, - bnd*sum(y_val[i,j] * v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j ) + 
-                sum(demande[i] * v[i] for i in 1:n))
-    
+    @objective(sub_model, Max, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) +
+                               sum(demande[i] * v[i] for i in 1:n))
+
     ##### Constraints #####
     @constraint(sub_model, v[1] == 0)
     # Feasibility constraint
-    @constraint(sub_model, sum(v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
-    #@constraint(sub_model, sum(v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) <= 1e-1)
-    #@constraint(sub_model, sum(v[i] for i in 1:n)== 1)
+    @constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
+    #@constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= 1e-1)
+    #@constraint(sub_model, sum(v[i] for i in 1:n) <= 1)
+    #@constraint(sub_model, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(demande[i] * v[i] for i in 1:n) <= 1)
 
 
     # Edges constraint
     for i in 1:n
         for j in 1:n
-            if adj[i,j] > 0.0 && i < j
-                @constraint(sub_model, - v_ij[i,j] - v[i] + v[j] <= 0)
-                @constraint(sub_model, - v_ij[i,j] + v[i] - v[j] <= 0)
+            if adj[i, j] > 0.0 && i < j
+                @constraint(sub_model, -v_ij[i, j] - v[i] + v[j] <= 0)
+                @constraint(sub_model, -v_ij[i, j] + v[i] - v[j] <= 0)
             end
         end
     end
-    
+
     optimize!(sub_model)
     feasibleSolutionFound = primal_status(sub_model) == MOI.FEASIBLE_POINT
     isOptimal = termination_status(sub_model) == MOI.OPTIMAL
@@ -49,10 +50,10 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
 end
 
 
-function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool= false,
-     timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool=false,
+    timeLimit::Float64=-1.0, bnd::Int64=1)::Any
     start = time()
-    readGraph("./tp2/instances/"*inputFile*".txt")
+    readGraph("./tp2/instances/" * inputFile * ".txt")
     # Creating the model
     model = Model(CPLEX.Optimizer)
     set_silent(model)
@@ -61,11 +62,11 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     end
 
     ##### Variables #####
-    @variable(model, y[i in 1:n, j in 1:n] >= 0., Int)
+    @variable(model, y[i in 1:n, j in 1:n] >= 0.0, Int)
 
     ##### Objective #####
-    @objective(model, Min, sum(y[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j))
-    
+    @objective(model, Min, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j))
+
     ##### Constraints #####
 
     hasAddedConstraint = true
@@ -86,15 +87,15 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
             if showResult
                 println("Current value ", value)
             end
-            subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
+            subVal, v_ij_val, v_val, subTime = subProblem(y_val, bnd)
             if subVal > 1e-5
                 nbIter += 1
                 if showResult
                     println("Subproblem value ", subVal)
                     println("Adding optimality cut")
                 end
-                @constraint(model, - bnd*sum(y[i,j] * v_ij_val[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) + 
-                sum(demande[i] * v_val[i] for i in 1:n) <= 0)
+                @constraint(model, -bnd * sum(y[i, j] * v_ij_val[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) +
+                                   sum(demande[i] * v_val[i] for i in 1:n) <= 0)
                 hasAddedConstraint = true
             end
         else
