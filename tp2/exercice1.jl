@@ -1,5 +1,6 @@
 using JuMP
 using CPLEX
+using Graphs
 
 include("./instances/exemple-lecture-graphe.jl")
 """
@@ -63,6 +64,10 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
 
     ##### Objective #####
     @objective(model, Min, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j))
+
+    ##### Bounds #####
+    @constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= upperBound(inputFile, bnd=bnd))
+    #@constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) >= lowerBound(inputFile, bnd=bnd))
 
     ##### Constraints #####
 
@@ -132,4 +137,61 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     end
 
 
+end
+
+function upperBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, showResult::Bool=false,
+    timeLimit::Float64=-1.0)::Any
+    start = time()
+    readGraph("./tp2/instances/" * inputFile * ".txt")
+
+    y = [[0 for j in 1:n] for j in 1:n]
+
+    # Build graph
+    graph = Graph(n)
+
+    for i in 1:n
+        for j in (i+1):n
+            if adj[i, j] > 0.0
+                add_edge!(graph, i, j)
+            end
+        end
+    end
+    # Get shortests paths
+    source_paths = dijkstra_shortest_paths(graph, 1)
+    paths = enumerate_paths(source_paths)
+    for p in 1:n
+        for i in 2:length(paths[p])
+            y[paths[p][i-1]][paths[p][i]] += demande[p]
+        end
+    end
+
+    bound = 0
+    for i in 1:n
+        for j in i+1:n
+            bound += ceil((y[i][j] + y[j][i]) / bnd)
+        end
+    end
+    return bound
+end
+
+function lowerBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, showResult::Bool=false,
+    timeLimit::Float64=-1.0)::Any
+    start = time()
+    readGraph("./tp2/instances/" * inputFile * ".txt")
+
+    # Build graph
+    graph = Graph(n)
+
+    for i in 1:n
+        for j in (i+1):n
+            if adj[i, j] > 0.0
+                add_edge!(graph, i, j)
+            end
+        end
+    end
+    # Get shortests paths
+    source_paths = dijkstra_shortest_paths(graph, 1)
+    paths = enumerate_paths(source_paths)
+
+    return ceil(sum([demande[i] * (length(paths[i]) - 1) for i in 2:n]) / bnd), time() - start
 end
