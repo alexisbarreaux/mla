@@ -16,15 +16,18 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     ##### Variables #####
     @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.0)
     @variable(sub_model, v[i in 1:n] >= 0.0)
+    @variable(sub_model, z >= 1e-3)
 
     ##### Objective #####
-    @objective(sub_model, Max, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) +
-                               sum(demande[i] * v[i] for i in 1:n))
+    @objective(sub_model, Max, 0)
+
+    #Objective constraint
+    @constraint(sub_model, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(demande[i] * v[i] for i in 1:n) == z)
 
     ##### Constraints #####
     @constraint(sub_model, v[1] == 0)
     # Feasibility constraint
-    @constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
+    #@constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
     #@constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= 1e-1)
     #@constraint(sub_model, sum(v[i] for i in 1:n) <= 1)
     #@constraint(sub_model, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(demande[i] * v[i] for i in 1:n) <= 1)
@@ -43,10 +46,11 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     optimize!(sub_model)
     feasibleSolutionFound = primal_status(sub_model) == MOI.FEASIBLE_POINT
     isOptimal = termination_status(sub_model) == MOI.OPTIMAL
-    if !(feasibleSolutionFound && isOptimal)
-        println("Optimal not found in subproblem")
+    if !(feasibleSolutionFound)
+        return -1, 0, 0, 0
+
     end
-    return JuMP.objective_value(sub_model), JuMP.value.(v_ij), JuMP.value.(v), JuMP.solve_time(sub_model)
+    return JuMP.value(z), JuMP.value.(v_ij), JuMP.value.(v), JuMP.solve_time(sub_model)
 end
 
 
@@ -112,7 +116,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     if feasibleSolutionFound
         # If time was exceeded, ensure we have no invalid cuts for the last 
         if (time() - start) > timeLimit
-            subVal, _,_,_= subProblem(y_val, bnd)
+            subVal, _, _, _ = subProblem(y_val, bnd)
             if subVal > 1e-5
                 println("There are still invalid cuts after time limit")
                 return
