@@ -24,7 +24,7 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     ##### Constraints #####
     @constraint(sub_model, v[1] == 0)
     # Feasibility constraint
-    @constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
+    @constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 10)
     #@constraint(sub_model, sum(v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= 1e-1)
     #@constraint(sub_model, sum(v[i] for i in 1:n) <= 1)
     #@constraint(sub_model, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(demande[i] * v[i] for i in 1:n) <= 1)
