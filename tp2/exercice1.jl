@@ -112,7 +112,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     if feasibleSolutionFound
         # If time was exceeded, ensure we have no invalid cuts for the last 
         if (time() - start) > timeLimit
-            subVal, _,_,_= subProblem(y_val, bnd)
+            subVal, _, _, _ = subProblem(y_val, bnd)
             if subVal > 1e-5
                 println("There are still invalid cuts after time limit")
                 return
