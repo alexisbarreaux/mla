@@ -5,39 +5,35 @@ include("./instances/exemple-lecture-graphe.jl")
 """
 include("./tp2/exercice1.jl")
 readGraph("./tp2/instances/benders-graphe-hexagone.txt")
-linksBenders("benders-graphe-hexagone.txt")
+linksBenders("benders-graphe-hexagone")
 """
 
-function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
+function subProblem(y_val::Any, bnd::Int64, E::Any)::Any
     # Creating the model
     sub_model = Model(CPLEX.Optimizer)
     set_silent(sub_model)
 
     ##### Variables #####
-    @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.)
+    @variable(sub_model, v_ij[(i,j) in E] >= 0.)
     @variable(sub_model, v[i in 1:n] >= 0.)
 
     ##### Objective #####
-    @objective(sub_model, Max, - bnd*sum(y_val[i,j] * v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j ) + 
-                sum(demande[i] * v[i] for i in 1:n))
+    @objective(sub_model, Max, - bnd*sum(y_val .* v_ij) + 
+                sum(demande .* v))
     
     ##### Constraints #####
     @constraint(sub_model, v[1] == 0)
     # Feasibility constraint
-    @constraint(sub_model, sum(v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) + sum(v[i] for i in 1:n) == 1)
+    @constraint(sub_model, sum(v_ij) + sum(v) == 1)
     #@constraint(sub_model, sum(v_ij[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) <= 1e-1)
     #@constraint(sub_model, sum(v[i] for i in 1:n)== 1)
 
 
     # Edges constraint
-    for i in 1:n
-        for j in 1:n
-            if adj[i,j] > 0.0 && i < j
-                @constraint(sub_model, - v_ij[i,j] - v[i] + v[j] <= 0)
-                @constraint(sub_model, - v_ij[i,j] + v[i] - v[j] <= 0)
-            end
-        end
-    end
+    println(E)
+    println(v_ij)
+    @constraint(sub_model, [(i,j) in E], - v_ij[(i,j)] - v[i] + v[j] <= 0)
+    @constraint(sub_model,  [(i,j) in E], - v_ij[(i,j)] + v[i] - v[j] <= 0)
     
     optimize!(sub_model)
     feasibleSolutionFound = primal_status(sub_model) == MOI.FEASIBLE_POINT
@@ -60,11 +56,12 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
         set_time_limit_sec(model, timeLimit)
     end
 
+    E = [[i j] for i in 1:n for j in (i+1):n if adj[i,j] > 0.]
     ##### Variables #####
-    @variable(model, y[i in 1:n, j in 1:n] >= 0., Int)
+    @variable(model, y[(i,j) in E] >= 0., Int)
 
     ##### Objective #####
-    @objective(model, Min, sum(y[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j))
+    @objective(model, Min, sum(y))
     
     ##### Constraints #####
 
@@ -86,15 +83,15 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
             if showResult
                 println("Current value ", value)
             end
-            subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd)
+            subVal, v_ij_val, v_val, subTime= subProblem(y_val, bnd, E)
             if subVal > 1e-5
                 nbIter += 1
                 if showResult
                     println("Subproblem value ", subVal)
                     println("Adding optimality cut")
                 end
-                @constraint(model, - bnd*sum(y[i,j] * v_ij_val[i,j] for i in 1:n for j in 1:n if adj[i,j] > 0.0 && i < j) + 
-                sum(demande[i] * v_val[i] for i in 1:n) <= 0)
+                @constraint(model, - bnd*sum(y .* v_ij_val) + 
+                sum(demande .* v_val) <= 0)
                 hasAddedConstraint = true
             end
         else
