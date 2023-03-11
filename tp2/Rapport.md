@@ -23,6 +23,6 @@ Cela nous fait donc une borne inférieure du problème.
 
 De plus, considérer uniquement les plus courts chemins pour faire transiter la demande est une solution réalisable du problème et calculer le coût correspondant nous permet d'obtenir une borne supérieure du problème.
 
-Nous avons donc ajouter ses bornes dans le problème maître mais cela ne permet pas d'améliorer le temps de calcul pour toutes les instances. En effet sur certaines instances on réduit le temps et sur d'autres on l'augmente. Nous n'avons donc pas conservé ces bornes dans la comparaison des méthodes.
+Nous avons donc ajouté ces bornes dans le problème maître mais cela ne permet pas d'améliorer le temps de calcul pour toutes les instances. En effet sur certaines instances on réduit le temps et sur d'autres on l'augmente. Nous n'avons donc pas conservé ces bornes dans la comparaison des méthodes.
 
-## Comparaisons des différentes méthodes
+## Comparaison des différentes méthodes
