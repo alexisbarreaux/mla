@@ -36,7 +36,7 @@ Nous avons donc ajouté ces bornes dans le problème maître mais cela ne permet
 ### Utilisation du programme non décomposé
 
 Par curiosité, nous avons aussi voulu voir les performances du PLNE brut sans décomposition de Benders sur nos instances, car le problème nous semblait ne pas être si fortement contraint que cela.
-Cela nous a permis d'obtenir pour $bnd=3$ l'optimal en 2,3s sur benders4, de valeur 101, ce que nous n'arrivions pas à obtenir en des temps raisonnable avec les coupes de benders.
+Cela nous a permis d'obtenir pour $bnd=3$ l'optimal en quelques secondes sur benders4, de valeur 101, ce que nous n'arrivions pas à obtenir en des temps raisonnable avec les coupes de benders. Nous avons pour ces résultats ajouté une colonne "WITHOUT BENDERS" dans le sommaire des résultats.
 
 ## Comparaison des différentes méthodes
 

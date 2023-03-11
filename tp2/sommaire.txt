@@ -11,14 +11,14 @@ benders4.txt   5.31900    276.0    192    1.56900    276.0   109 / 0            
 
 =============================================================================================
 bnd = 3
-                NO RELAXATION               WITH RELAXATION                
-                TIME    VALEUR   Iter       TIME    VALEUR    Iter(relaxed/normal)   
+                NO RELAXATION                 WITH RELAXATION                             WITHOUT BENDERS
+                TIME    VALEUR   Iter        TIME    VALEUR    Iter(relaxed/normal)       TIME    VALEUR
 =============================================================================================
-hexagone       0.03900  10.0     9          0.01699    10.0    8   / 0
-benders1.txt   11.4379  237.0    199        8.66799    237.0   76  / 56
-benders2.txt   -------  -----    ---        -------  -----    ---
-benders3.txt   -------  -----    ---        -------  -----    ---     
-benders4.txt   -------  -----    ---        -------  -----    ---      
+hexagone       0.03900   10.0     9          0.01699   10.0    8   / 0                    0.00600  10.0 
+benders1.txt   11.4379   237.0    199        8.66799   237.0   76  / 56                   0.06800  237.0   
+benders2.txt   -------   -----    ---        -------   -----    ---                       -------  ----- 
+benders3.txt   -------   -----    ---        -------   -----    ---                       -------  -----  
+benders4.txt   -------   -----    ---        -------  - ----    ---                       5.37199  101.0   
 
 Nota bene: 
 - si la solution est notée "---" c'est qu'il n'y a pas de solutions réalisable
