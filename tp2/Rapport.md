@@ -10,7 +10,7 @@
 
 ### Question 1
 
-On peut remarquer dans la formulation initiale du problème que les contraintes d'inégalité sont en fait toutes saturées pour une solution optimale. Dans le cas où bnd = 1, pour faire transiter une quantité x (entière) il faut ouvrir exactement x liaisons et qui seront saturées. Ainsi pour ouvrir un minimum de liaisons il faut passer par un nombre minimum d'arêtes, cela revient à calculer les plus courts chemins entre la source et les terminaux. 
+On peut remarquer dans la formulation initiale du problème que les contraintes d'inégalité sont en fait toutes saturées pour une solution optimale. Dans le cas où bnd = 1, pour faire transiter une quantité x (entière) il faut ouvrir exactement x liaisons et qui seront saturées. Ainsi pour ouvrir un minimum de liaisons il faut passer par un nombre minimum d'arêtes pour chaque terminal, cela revient à calculer les plus courts chemins entre la source et les terminaux. 
 
 ### Question 2
 
