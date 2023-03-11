@@ -17,6 +17,7 @@ function subProblem(y_val::Matrix{Float64}, bnd::Int64)::Any
     ##### Variables #####
     @variable(sub_model, v_ij[i in 1:n, j in 1:n] >= 0.0)
     @variable(sub_model, v[i in 1:n] >= 0.0)
+    #@variable(sub_model, v[i in 1:n])
 
     ##### Objective #####
     @objective(sub_model, Max, -bnd * sum(y_val[i, j] * v_ij[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) +
@@ -66,8 +67,12 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
     @objective(model, Min, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j))
 
     ##### Bounds #####
-    @constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= upperBound(inputFile, bnd=bnd))
-    #@constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) >= lowerBound(inputFile, bnd=bnd))
+    lower_bound, upper_bound = boundDijkstra(inputFile, bnd=bnd)
+    #@constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) <= upper_bound)
+    #@constraint(model, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) >= lower_bound)
+
+    ##### Pre-cuts #####
+    #@constraint(model, -bnd * sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j) + sum(demande) <= 0)
 
     ##### Constraints #####
 
@@ -139,7 +144,7 @@ function linksBenders(inputFile::String="benders-graphe-hexagone"; showResult::B
 
 end
 
-function upperBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, showResult::Bool=false,
+function boundDijkstra(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, showResult::Bool=false,
     timeLimit::Float64=-1.0)::Any
     start = time()
     readGraph("./tp2/instances/" * inputFile * ".txt")
@@ -159,19 +164,22 @@ function upperBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, s
     # Get shortests paths
     source_paths = dijkstra_shortest_paths(graph, 1)
     paths = enumerate_paths(source_paths)
+
+    lbound = ceil(sum([demande[i] * (length(paths[i]) - 1) for i in 2:n]) / bnd)
+
     for p in 1:n
         for i in 2:length(paths[p])
             y[paths[p][i-1]][paths[p][i]] += demande[p]
         end
     end
 
-    bound = 0
+    ubound = 0
     for i in 1:n
         for j in i+1:n
-            bound += ceil((y[i][j] + y[j][i]) / bnd)
+            ubound += ceil((y[i][j] + y[j][i]) / bnd)
         end
     end
-    return bound
+    return lbound, ubound
 end
 
 function lowerBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, showResult::Bool=false,
@@ -194,4 +202,81 @@ function lowerBound(inputFile::String="benders-graphe-hexagone"; bnd::Int64=1, s
     paths = enumerate_paths(source_paths)
 
     return ceil(sum([demande[i] * (length(paths[i]) - 1) for i in 2:n]) / bnd), time() - start
+end
+
+function withoutBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool=false,
+    timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+    start = time()
+    readGraph("./tp2/instances/" * inputFile * ".txt")
+    # Creating the model
+    model = Model(CPLEX.Optimizer)
+    set_silent(model)
+
+    ##### Variables #####
+    @variable(model, y[i in 1:n, j in 1:n] >= 0.0, Int)
+    @variable(model, x[i in 1:n, j in 1:n] >= 0.0)
+
+    ##### Objective #####
+    @objective(model, Min, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j))
+
+    ##### Constraints #####
+    for i in 2:n
+        @constraint(model, sum(x[j, i] for j in 1:n if adj[i, j] > 0.0) - sum(x[i, j] for j in 1:n if adj[i, j] > 0.0) >= demande[i])
+    end
+
+    for i in 1:n
+        for j in i+1:n
+            @constraint(model, bnd * y[i, j] - x[i, j] - x[j, i] >= 0)
+        end
+    end
+
+    optimize!(model)
+
+    feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
+    if !(feasibleSolutionFound)
+        println("No solution found")
+        return
+    end
+    isOptimal = termination_status(model) == MOI.OPTIMAL
+    return isOptimal, JuMP.objective_value(model), time() - start
+end
+
+
+function automaticBenders(inputFile::String="benders-graphe-hexagone"; showResult::Bool=false,
+    timeLimit::Float64=-1.0, bnd::Int64=1)::Any
+    start = time()
+    readGraph("./tp2/instances/" * inputFile * ".txt")
+    # Creating the model
+    model = Model(CPLEX.Optimizer)
+    set_silent(model)
+
+    ##### Variables #####
+    @variable(model, y[i in 1:n, j in 1:n] >= 0.0, Int)
+    @variable(model, x[i in 1:n, j in 1:n] >= 0.0)
+
+    ##### Objective #####
+    @objective(model, Min, sum(y[i, j] for i in 1:n for j in 1:n if adj[i, j] > 0.0 && i < j))
+
+    ##### Constraints #####
+    for i in 2:n
+        @constraint(model, sum(x[j, i] for j in 1:n if adj[i, j] > 0.0) - sum(x[i, j] for j in 1:n if adj[i, j] > 0.0) >= demande[i])
+    end
+
+    for i in 1:n
+        for j in i+1:n
+            @constraint(model, bnd * y[i, j] - x[i, j] - x[j, i] >= 0)
+        end
+    end
+
+    set_optimizer_attribute(model, "CPXPARAM_Benders_Strategy", 3)
+
+    optimize!(model)
+
+    feasibleSolutionFound = primal_status(model) == MOI.FEASIBLE_POINT
+    if !(feasibleSolutionFound)
+        println("No solution found")
+        return
+    end
+    isOptimal = termination_status(model) == MOI.OPTIMAL
+    return isOptimal, JuMP.objective_value(model), time() - start
 end
